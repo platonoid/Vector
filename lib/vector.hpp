@@ -232,14 +232,6 @@ public:
         capacity_ = new_capacity;
     }
 
-    constexpr void push_back(const T& value) {
-        if (real_size_ == capacity_) {
-            allocate();
-        }
-        std::allocator_traits<Allocator>::construct(alloc_, data_ + real_size_, value);
-        real_size_++;
-    }
-
     template <typename... Args>
     constexpr iterator emplace(const_iterator pos, Args&&... args) {
         if (real_size_ == capacity_) {
@@ -338,12 +330,94 @@ public:
         return pos;
     }
 
-    constexpr void push_back(T&& value) {
+    template <typename... Args>
+    constexpr void emplace_back(Args&&... args) {
         if (real_size_ == capacity_) {
             allocate();
         }
-        std::allocator_traits<Allocator>::construct(alloc_, data_ + real_size_, value);
+        std::allocator_traits<Allocator>::construct(alloc_, data_ + real_size_, std::forward<Args>(args)...);
         real_size_++;
+    }
+
+    constexpr void push_back(const T& value) {
+        emplace_back(value);
+    }
+
+    constexpr void push_back(T&& value) {
+        emplace_back(std::move(value));
+    }
+
+    template <std::ranges::input_range Range>
+    constexpr void append_range(Range&& range) {
+        if constexpr (std::ranges::sized_range<Range>) {
+            reserve(real_size_ + std::ranges::size(range));
+        }
+        
+        for (auto&& i : range) {
+            emplace_back(std::forward<decltype(i)>(i));
+        }
+    }
+
+    template <std::ranges::input_range Range>
+    constexpr void assign_range(Range&& range) {
+        clear();
+        append_range(std::forward<Range>(range));
+    }
+
+    template <std::ranges::input_range Range>
+    constexpr iterator insert_range(const_iterator pos, Range&& range) {
+        const size_type insert_pos = pos - cbegin();
+        
+        if constexpr (std::ranges::sized_range<Range>) {
+            reserve(real_size_ + std::ranges::size(range));
+        }
+        
+        Vector<T> tail;
+        tail.reserve(real_size_ - insert_pos);
+        
+        for (auto it = begin() + insert_pos; it != end(); ++it) {
+            tail.emplace_back(std::move(*it));
+        }
+        
+        real_size_ = insert_pos;
+        
+        for (auto&& i : range) {
+            emplace_back(std::forward<decltype(i)>(i));
+        }
+        
+        for (auto&& i : tail) {
+            emplace_back(std::move(i));
+        }
+        
+        return begin() + insert_pos;
+    }
+
+    template <std::ranges::input_range Range>
+    constexpr iterator insert_range(iterator pos, Range&& range) {
+        size_type insert_pos = pos - begin();
+        
+        if constexpr (std::ranges::sized_range<Range>) {
+            reserve(real_size_ + std::ranges::size(range));
+        }
+        
+        Vector<T> tail;
+        tail.reserve(real_size_ - insert_pos);
+        
+        for (auto it = begin() + insert_pos; it != end(); ++it) {
+            tail.emplace_back(std::move(*it));
+        }
+        
+        real_size_ = insert_pos;
+        
+        for (auto&& i : range) {
+            emplace_back(std::forward<decltype(i)>(i));
+        }
+        
+        for (auto&& i : tail) {
+            emplace_back(std::move(i));
+        }
+        
+        return begin() + insert_pos;
     }
 
     void pop_back() noexcept {
