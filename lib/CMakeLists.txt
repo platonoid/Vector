@@ -1,0 +1,1 @@
+add_library(vec vector.cpp vector.hpp)
