@@ -299,3 +299,36 @@ TEST(VectorTest, AssignListTest) {
         std_vec.begin(), std_vec.end()
     ));
 }
+
+TEST(VectorTest, RangeTest) {
+    Vector<int> my_vec;
+    std::vector<int> std_vec;
+
+    std::vector<int> v1 = {4, 5};
+    std::vector<int> v2 = {6, 7, 8};
+    std::vector<int> v3 = {9, 10, 11, 12};
+
+    my_vec.append_range(v1);
+    std_vec.append_range(v1);
+
+    ASSERT_TRUE(std::equal(
+        my_vec.begin(), my_vec.end(),
+        std_vec.begin(), std_vec.end()
+    ));
+
+    my_vec.assign_range(v2);
+    std_vec.assign_range(v2);
+
+    ASSERT_TRUE(std::equal(
+        my_vec.begin(), my_vec.end(),
+        std_vec.begin(), std_vec.end()
+    ));
+
+    my_vec.insert_range(my_vec.cbegin() + 2, v3);
+    std_vec.insert_range(std_vec.cbegin() + 2, v3);
+
+    ASSERT_TRUE(std::equal(
+        my_vec.begin(), my_vec.end(),
+        std_vec.begin(), std_vec.end()
+    ));
+}
